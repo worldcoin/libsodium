@@ -11,6 +11,9 @@
 # include <unistd.h>
 #endif
 
+#undef HAVE_GETRANDOM
+#undef HAVE_GETENTROPY
+
 #include <sys/types.h>
 #ifndef _WIN32
 # include <sys/stat.h>
