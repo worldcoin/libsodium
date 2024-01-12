@@ -347,28 +347,7 @@ randombytes_internal_random_init(void)
     global.rdrand_available = sodium_runtime_has_rdrand();
     global.getentropy_available = 0;
     global.getrandom_available = 0;
-
-# ifdef HAVE_GETENTROPY
-    {
-        unsigned char fodder[16];
-
-        if (randombytes_getentropy(fodder, sizeof fodder) == 0) {
-            global.getentropy_available = 1;
-            errno = errno_save;
-            return;
-        }
-    }
-# elif defined(HAVE_LINUX_COMPATIBLE_GETRANDOM)
-    {
-        unsigned char fodder[16];
-
-        if (randombytes_linux_getrandom(fodder, sizeof fodder) == 0) {
-            global.getrandom_available = 1;
-            errno = errno_save;
-            return;
-        }
-    }
-# endif
+    
 /* LCOV_EXCL_START */
 # if !defined(NONEXISTENT_DEV_RANDOM)
     assert((global.getentropy_available | global.getrandom_available) == 0);
