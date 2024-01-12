@@ -110,6 +110,10 @@ BOOLEAN NTAPI RtlGenRandom(PVOID RandomBuffer, ULONG RandomBufferLength);
 # endif
 #endif
 
+// PATCH FOR ANDROID
+#undef HAVE_GETRANDOM
+#undef HAVE_LINUX_COMPATIBLE_GETRANDOM
+
 typedef struct InternalRandomGlobal_ {
     int           initialized;
     int           random_data_source_fd;
