@@ -13,6 +13,7 @@
 
 #undef HAVE_GETRANDOM
 #undef HAVE_GETENTROPY
+#undef HAVE_LINUX_COMPATIBLE_GETRANDOM
 
 #include <sys/types.h>
 #ifndef _WIN32
@@ -103,6 +104,10 @@ BOOLEAN NTAPI RtlGenRandom(PVOID RandomBuffer, ULONG RandomBufferLength);
 #  define TLS
 # endif
 #endif
+
+#undef HAVE_GETRANDOM
+#undef HAVE_GETENTROPY
+#undef HAVE_LINUX_COMPATIBLE_GETRANDOM
 
 typedef struct InternalRandomGlobal_ {
     int           initialized;
