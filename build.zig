@@ -6,6 +6,139 @@ const mem = std.mem;
 const Compile = std.Build.Step.Compile;
 const Target = std.Target;
 
+fn initLibConfig(b: *std.Build, target: std.Build.ResolvedTarget, lib: *Compile) void {
+    lib.linkLibC();
+    lib.addIncludePath(b.path("src/libsodium/include/sodium"));
+    lib.root_module.addCMacro("_GNU_SOURCE", "1");
+    lib.root_module.addCMacro("CONFIGURED", "1");
+    lib.root_module.addCMacro("DEV_MODE", "1");
+    lib.root_module.addCMacro("HAVE_ATOMIC_OPS", "1");
+    lib.root_module.addCMacro("HAVE_C11_MEMORY_FENCES", "1");
+    lib.root_module.addCMacro("HAVE_CET_H", "1");
+    lib.root_module.addCMacro("HAVE_GCC_MEMORY_FENCES", "1");
+    lib.root_module.addCMacro("HAVE_INLINE_ASM", "1");
+    lib.root_module.addCMacro("HAVE_INTTYPES_H", "1");
+    lib.root_module.addCMacro("HAVE_STDINT_H", "1");
+    lib.root_module.addCMacro("HAVE_TI_MODE", "1");
+    lib.want_lto = false;
+
+    const endian = target.result.cpu.arch.endian();
+    switch (endian) {
+        .big => lib.root_module.addCMacro("NATIVE_BIG_ENDIAN", "1"),
+        .little => lib.root_module.addCMacro("NATIVE_LITTLE_ENDIAN", "1"),
+    }
+
+    switch (target.result.os.tag) {
+        .linux => {
+            lib.root_module.addCMacro("ASM_HIDE_SYMBOL", ".hidden");
+            lib.root_module.addCMacro("TLS", "_Thread_local");
+
+            lib.root_module.addCMacro("HAVE_CATCHABLE_ABRT", "1");
+            lib.root_module.addCMacro("HAVE_CATCHABLE_SEGV", "1");
+            lib.root_module.addCMacro("HAVE_CLOCK_GETTIME", "1");
+            lib.root_module.addCMacro("HAVE_GETPID", "1");
+            lib.root_module.addCMacro("HAVE_MADVISE", "1");
+            lib.root_module.addCMacro("HAVE_MLOCK", "1");
+            lib.root_module.addCMacro("HAVE_MMAP", "1");
+            lib.root_module.addCMacro("HAVE_MPROTECT", "1");
+            lib.root_module.addCMacro("HAVE_NANOSLEEP", "1");
+            lib.root_module.addCMacro("HAVE_POSIX_MEMALIGN", "1");
+            lib.root_module.addCMacro("HAVE_PTHREAD_PRIO_INHERIT", "1");
+            lib.root_module.addCMacro("HAVE_PTHREAD", "1");
+            lib.root_module.addCMacro("HAVE_RAISE", "1");
+            lib.root_module.addCMacro("HAVE_SYSCONF", "1");
+            lib.root_module.addCMacro("HAVE_SYS_AUXV_H", "1");
+            lib.root_module.addCMacro("HAVE_SYS_MMAN_H", "1");
+            lib.root_module.addCMacro("HAVE_SYS_PARAM_H", "1");
+            lib.root_module.addCMacro("HAVE_SYS_RANDOM_H", "1");
+            lib.root_module.addCMacro("HAVE_WEAK_SYMBOLS", "1");
+        },
+        .windows => {
+            lib.root_module.addCMacro("HAVE_RAISE", "1");
+            lib.root_module.addCMacro("HAVE_SYS_PARAM_H", "1");
+            if (lib.isStaticLibrary()) {
+                lib.root_module.addCMacro("SODIUM_STATIC", "1");
+            }
+        },
+        .macos => {
+            lib.root_module.addCMacro("ASM_HIDE_SYMBOL", ".private_extern");
+            lib.root_module.addCMacro("TLS", "_Thread_local");
+
+            lib.root_module.addCMacro("HAVE_ARC4RANDOM", "1");
+            lib.root_module.addCMacro("HAVE_ARC4RANDOM_BUF", "1");
+            lib.root_module.addCMacro("HAVE_CATCHABLE_ABRT", "1");
+            lib.root_module.addCMacro("HAVE_CATCHABLE_SEGV", "1");
+            lib.root_module.addCMacro("HAVE_CLOCK_GETTIME", "1");
+            lib.root_module.addCMacro("HAVE_GETENTROPY", "1");
+            lib.root_module.addCMacro("HAVE_GETPID", "1");
+            lib.root_module.addCMacro("HAVE_MADVISE", "1");
+            lib.root_module.addCMacro("HAVE_MEMSET_S", "1");
+            lib.root_module.addCMacro("HAVE_MLOCK", "1");
+            lib.root_module.addCMacro("HAVE_MMAP", "1");
+            lib.root_module.addCMacro("HAVE_MPROTECT", "1");
+            lib.root_module.addCMacro("HAVE_NANOSLEEP", "1");
+            lib.root_module.addCMacro("HAVE_POSIX_MEMALIGN", "1");
+            lib.root_module.addCMacro("HAVE_PTHREAD", "1");
+            lib.root_module.addCMacro("HAVE_PTHREAD_PRIO_INHERIT", "1");
+            lib.root_module.addCMacro("HAVE_RAISE", "1");
+            lib.root_module.addCMacro("HAVE_SYSCONF", "1");
+            lib.root_module.addCMacro("HAVE_SYS_MMAN_H", "1");
+            lib.root_module.addCMacro("HAVE_SYS_PARAM_H", "1");
+            lib.root_module.addCMacro("HAVE_SYS_RANDOM_H", "1");
+            lib.root_module.addCMacro("HAVE_WEAK_SYMBOLS", "1");
+        },
+        .wasi => {
+            lib.root_module.addCMacro("HAVE_ARC4RANDOM", "1");
+            lib.root_module.addCMacro("HAVE_ARC4RANDOM_BUF", "1");
+            lib.root_module.addCMacro("HAVE_CLOCK_GETTIME", "1");
+            lib.root_module.addCMacro("HAVE_GETENTROPY", "1");
+            lib.root_module.addCMacro("HAVE_NANOSLEEP", "1");
+            lib.root_module.addCMacro("HAVE_POSIX_MEMALIGN", "1");
+            lib.root_module.addCMacro("HAVE_SYS_AUXV_H", "1");
+            lib.root_module.addCMacro("HAVE_SYS_PARAM_H", "1");
+            lib.root_module.addCMacro("HAVE_SYS_RANDOM_H", "1");
+        },
+        else => {},
+    }
+
+    switch (target.result.cpu.arch) {
+        .x86_64 => {
+            switch (target.result.os.tag) {
+                .windows => {},
+                else => {
+                    lib.root_module.addCMacro("HAVE_AMD64_ASM", "1");
+                    lib.root_module.addCMacro("HAVE_AVX_ASM", "1");
+                },
+            }
+            lib.root_module.addCMacro("HAVE_CPUID", "1");
+            lib.root_module.addCMacro("HAVE_MMINTRIN_H", "1");
+            lib.root_module.addCMacro("HAVE_EMMINTRIN_H", "1");
+            lib.root_module.addCMacro("HAVE_PMMINTRIN_H", "1");
+            lib.root_module.addCMacro("HAVE_TMMINTRIN_H", "1");
+            lib.root_module.addCMacro("HAVE_SMMINTRIN_H", "1");
+            lib.root_module.addCMacro("HAVE_AVXINTRIN_H", "1");
+            lib.root_module.addCMacro("HAVE_AVX2INTRIN_H", "1");
+            lib.root_module.addCMacro("HAVE_AVX512FINTRIN_H", "1");
+            lib.root_module.addCMacro("HAVE_WMMINTRIN_H", "1");
+            lib.root_module.addCMacro("HAVE_RDRAND", "1");
+        },
+        .aarch64, .aarch64_be => {
+            lib.root_module.addCMacro("HAVE_ARMCRYPTO", "1");
+        },
+        .wasm32, .wasm64 => {
+            lib.root_module.addCMacro("__wasm__", "1");
+        },
+        else => {},
+    }
+
+    switch (target.result.os.tag) {
+        .wasi => {
+            lib.root_module.addCMacro("__wasi__", "1");
+        },
+        else => {},
+    }
+}
+
 pub fn build(b: *std.Build) !void {
     const root_path = b.pathFromRoot(".");
     var cwd = try fs.openDirAbsolute(root_path, .{});
@@ -20,26 +153,20 @@ pub fn build(b: *std.Build) !void {
     const enable_benchmarks = b.option(bool, "enable_benchmarks", "Whether tests should be benchmarks.") orelse false;
     const benchmarks_iterations = b.option(u32, "iterations", "Number of iterations for benchmarks.") orelse 200;
     var build_static = b.option(bool, "static", "Build libsodium as a static library.") orelse true;
-    const build_shared = b.option(bool, "shared", "Build libsodium as a shared library.") orelse true;
+    var build_shared = b.option(bool, "shared", "Build libsodium as a shared library.") orelse true;
 
     const build_tests = b.option(bool, "test", "Build the tests (implies -Dstatic=true)") orelse true;
 
+    if (target.result.isWasm()) {
+        build_shared = false;
+    }
     if (build_tests) {
         build_static = true;
     }
 
     switch (target.result.cpu.arch) {
-        // Features we assume are always available because they won't affect
-        // code generation in files that don't use them.
-        .x86_64 => {
-            target.query.cpu_features_add.addFeature(@intFromEnum(Target.x86.Feature.sse4_1));
-            target.query.cpu_features_add.addFeature(@intFromEnum(Target.x86.Feature.aes));
-            target.query.cpu_features_add.addFeature(@intFromEnum(Target.x86.Feature.pclmul));
-            target.query.cpu_features_add.addFeature(@intFromEnum(Target.x86.Feature.rdrnd));
-        },
         .aarch64, .aarch64_be => {
-            target.query.cpu_features_add.addFeature(@intFromEnum(Target.aarch64.Feature.crypto));
-            // ARM CPUs supported by Windows also support NEON.
+            // ARM CPUs supported by Windows are assumed to have NEON support
             if (target.result.isMinGW()) {
                 target.query.cpu_features_add.addFeature(@intFromEnum(Target.aarch64.Feature.neon));
             }
@@ -48,12 +175,12 @@ pub fn build(b: *std.Build) !void {
     }
 
     const static_lib = b.addStaticLibrary(.{
-        .name = "sodium",
+        .name = if (target.result.isMinGW()) "libsodium-static" else "sodium",
         .target = target,
         .optimize = optimize,
     });
     const shared_lib = b.addSharedLibrary(.{
-        .name = if (target.result.isMinGW()) "sodium_shared" else "sodium",
+        .name = if (target.result.isMinGW()) "libsodium" else "sodium",
         .target = target,
         .optimize = optimize,
         .strip = optimize != .Debug and !target.result.isMinGW(),
@@ -77,175 +204,35 @@ pub fn build(b: *std.Build) !void {
     }
 
     for (libs.items) |lib| {
-        if (lib.isDynamicLibrary() and
-            !(target.result.isDarwin() or target.result.isBSD() or target.result.isGnu() or target.result.isAndroid() or target.result.isMinGW()))
-        {
-            continue;
-        }
         b.installArtifact(lib);
-        lib.installHeader(src_path ++ "/include/sodium.h", "sodium.h");
-        lib.installHeadersDirectory(src_path ++ "/include/sodium", "sodium");
-        lib.linkLibC();
+        lib.installHeader(b.path(src_path ++ "/include/sodium.h"), "sodium.h");
+        lib.installHeadersDirectory(b.path(src_path ++ "/include/sodium"), "sodium", .{});
 
-        lib.addIncludePath(.{ .path = "src/libsodium/include/sodium" });
-        lib.defineCMacro("_GNU_SOURCE", "1");
-        lib.defineCMacro("CONFIGURED", "1");
-        lib.defineCMacro("DEV_MODE", "1");
-        lib.defineCMacro("HAVE_ATOMIC_OPS", "1");
-        lib.defineCMacro("HAVE_C11_MEMORY_FENCES", "1");
-        lib.defineCMacro("HAVE_CET_H", "1");
-        lib.defineCMacro("HAVE_GCC_MEMORY_FENCES", "1");
-        lib.defineCMacro("HAVE_INLINE_ASM", "1");
-        lib.defineCMacro("HAVE_INTTYPES_H", "1");
-        lib.defineCMacro("HAVE_STDINT_H", "1");
-        lib.defineCMacro("HAVE_TI_MODE", "1");
+        initLibConfig(b, target, lib);
 
-        const endian = target.result.cpu.arch.endian();
-        switch (endian) {
-            .big => lib.defineCMacro("NATIVE_BIG_ENDIAN", "1"),
-            .little => lib.defineCMacro("NATIVE_LITTLE_ENDIAN", "1"),
-        }
-
-        switch (target.result.os.tag) {
-            .linux => {
-                lib.defineCMacro("ASM_HIDE_SYMBOL", ".hidden");
-                lib.defineCMacro("TLS", "_Thread_local");
-
-                lib.defineCMacro("HAVE_CATCHABLE_ABRT", "1");
-                lib.defineCMacro("HAVE_CATCHABLE_SEGV", "1");
-                lib.defineCMacro("HAVE_CLOCK_GETTIME", "1");
-                lib.defineCMacro("HAVE_GETPID", "1");
-                lib.defineCMacro("HAVE_INLINE_ASM", "1");
-                lib.defineCMacro("HAVE_MADVISE", "1");
-                lib.defineCMacro("HAVE_MLOCK", "1");
-                lib.defineCMacro("HAVE_MMAP", "1");
-                lib.defineCMacro("HAVE_MPROTECT", "1");
-                lib.defineCMacro("HAVE_NANOSLEEP", "1");
-                lib.defineCMacro("HAVE_POSIX_MEMALIGN", "1");
-                lib.defineCMacro("HAVE_PTHREAD_PRIO_INHERIT", "1");
-                lib.defineCMacro("HAVE_PTHREAD", "1");
-                lib.defineCMacro("HAVE_RAISE", "1");
-                lib.defineCMacro("HAVE_SYSCONF", "1");
-                lib.defineCMacro("HAVE_SYS_AUXV_H", "1");
-                lib.defineCMacro("HAVE_SYS_MMAN_H", "1");
-                lib.defineCMacro("HAVE_SYS_PARAM_H", "1");
-                lib.defineCMacro("HAVE_SYS_RANDOM_H", "1");
-                lib.defineCMacro("HAVE_WEAK_SYMBOLS", "1");
-            },
-            .windows => {
-                lib.defineCMacro("HAVE_RAISE", "1");
-                lib.defineCMacro("HAVE_SYS_PARAM_H", "1");
-                if (lib.isStaticLibrary()) {
-                    lib.defineCMacro("SODIUM_STATIC", "1");
-                }
-            },
-            .macos => {
-                lib.defineCMacro("ASM_HIDE_SYMBOL", ".private_extern");
-                lib.defineCMacro("TLS", "_Thread_local");
-
-                lib.defineCMacro("HAVE_ARC4RANDOM", "1");
-                lib.defineCMacro("HAVE_ARC4RANDOM_BUF", "1");
-                lib.defineCMacro("HAVE_CATCHABLE_ABRT", "1");
-                lib.defineCMacro("HAVE_CATCHABLE_SEGV", "1");
-                lib.defineCMacro("HAVE_CLOCK_GETTIME", "1");
-                lib.defineCMacro("HAVE_GETENTROPY", "1");
-                lib.defineCMacro("HAVE_GETPID", "1");
-                lib.defineCMacro("HAVE_MADVISE", "1");
-                lib.defineCMacro("HAVE_MEMSET_S", "1");
-                lib.defineCMacro("HAVE_MLOCK", "1");
-                lib.defineCMacro("HAVE_MMAP", "1");
-                lib.defineCMacro("HAVE_MPROTECT", "1");
-                lib.defineCMacro("HAVE_NANOSLEEP", "1");
-                lib.defineCMacro("HAVE_POSIX_MEMALIGN", "1");
-                lib.defineCMacro("HAVE_PTHREAD", "1");
-                lib.defineCMacro("HAVE_PTHREAD_PRIO_INHERIT", "1");
-                lib.defineCMacro("HAVE_RAISE", "1");
-                lib.defineCMacro("HAVE_SYSCONF", "1");
-                lib.defineCMacro("HAVE_SYS_MMAN_H", "1");
-                lib.defineCMacro("HAVE_SYS_PARAM_H", "1");
-                lib.defineCMacro("HAVE_SYS_RANDOM_H", "1");
-                lib.defineCMacro("HAVE_WEAK_SYMBOLS", "1");
-            },
-            .wasi => {
-                lib.defineCMacro("HAVE_ARC4RANDOM", "1");
-                lib.defineCMacro("HAVE_ARC4RANDOM_BUF", "1");
-                lib.defineCMacro("HAVE_CLOCK_GETTIME", "1");
-                lib.defineCMacro("HAVE_GETENTROPY", "1");
-                lib.defineCMacro("HAVE_NANOSLEEP", "1");
-                lib.defineCMacro("HAVE_POSIX_MEMALIGN", "1");
-                lib.defineCMacro("HAVE_SYS_AUXV_H", "1");
-                lib.defineCMacro("HAVE_SYS_PARAM_H", "1");
-                lib.defineCMacro("HAVE_SYS_RANDOM_H", "1");
-            },
-            else => {},
-        }
-
-        switch (target.result.cpu.arch) {
-            .x86_64 => {
-                lib.defineCMacro("HAVE_AMD64_ASM", "1");
-                lib.defineCMacro("HAVE_AVX_ASM", "1");
-                lib.defineCMacro("HAVE_CPUID", "1");
-                lib.defineCMacro("HAVE_MMINTRIN_H", "1");
-                lib.defineCMacro("HAVE_EMMINTRIN_H", "1");
-
-                const cpu_features = target.result.cpu.features;
-                const has_sse3 = cpu_features.isEnabled(@intFromEnum(Target.x86.Feature.sse3));
-                const has_ssse3 = cpu_features.isEnabled(@intFromEnum(Target.x86.Feature.ssse3));
-                const has_sse4_1 = cpu_features.isEnabled(@intFromEnum(Target.x86.Feature.sse4_1));
-                const has_avx = cpu_features.isEnabled(@intFromEnum(Target.x86.Feature.avx));
-                const has_avx2 = cpu_features.isEnabled(@intFromEnum(Target.x86.Feature.avx2));
-                const has_avx512f = cpu_features.isEnabled(@intFromEnum(Target.x86.Feature.avx512f));
-                const has_aes = cpu_features.isEnabled(@intFromEnum(Target.x86.Feature.aes));
-                const has_pclmul = cpu_features.isEnabled(@intFromEnum(Target.x86.Feature.pclmul));
-                const has_rdrnd = cpu_features.isEnabled(@intFromEnum(Target.x86.Feature.rdrnd));
-
-                if (has_sse3) lib.defineCMacro("HAVE_PMMINTRIN_H", "1");
-                if (has_ssse3) lib.defineCMacro("HAVE_TMMINTRIN_H", "1");
-                if (has_sse4_1) lib.defineCMacro("HAVE_SMMINTRIN_H", "1");
-                if (has_avx) lib.defineCMacro("HAVE_AVXINTRIN_H", "1");
-                if (has_avx2) lib.defineCMacro("HAVE_AVX2INTRIN_H", "1");
-                if (has_avx512f) lib.defineCMacro("HAVE_AVX512FINTRIN_H", "1");
-                if (has_aes and has_pclmul) lib.defineCMacro("HAVE_WMMINTRIN_H", "1");
-                if (has_rdrnd) lib.defineCMacro("HAVE_RDRAND", "1");
-            },
-            .aarch64, .aarch64_be => {
-                const cpu_features = target.result.cpu.features;
-                const has_neon = cpu_features.isEnabled(@intFromEnum(Target.aarch64.Feature.neon));
-                const has_crypto = cpu_features.isEnabled(@intFromEnum(Target.aarch64.Feature.crypto));
-                if (has_neon and has_crypto) {
-                    lib.defineCMacro("HAVE_ARMCRYPTO", "1");
-                }
-            },
-            .wasm32, .wasm64 => {
-                lib.defineCMacro("__wasm__", "1");
-            },
-            else => {},
-        }
-
-        switch (target.result.os.tag) {
-            .wasi => {
-                lib.defineCMacro("__wasi__", "1");
-            },
-            else => {},
-        }
+        const flags = &.{
+            "-fvisibility=hidden",
+            "-fno-strict-aliasing",
+            "-fno-strict-overflow",
+            "-fwrapv",
+            "-flax-vector-conversions",
+        };
 
         const allocator = heap.page_allocator;
+
         var walker = try src_dir.walk(allocator);
         while (try walker.next()) |entry| {
             const name = entry.basename;
             if (mem.endsWith(u8, name, ".c")) {
                 const full_path = try fmt.allocPrint(allocator, "{s}/{s}", .{ src_path, entry.path });
-                const flags = &.{
-                    "-fvisibility=hidden",
-                    "-fno-strict-aliasing",
-                    "-fno-strict-overflow",
-                    "-fwrapv",
-                    "-flax-vector-conversions",
-                };
-                lib.addCSourceFiles(.{ .files = &.{full_path}, .flags = flags });
+
+                lib.addCSourceFiles(.{
+                    .files = &.{full_path},
+                    .flags = flags,
+                });
             } else if (mem.endsWith(u8, name, ".S")) {
                 const full_path = try fmt.allocPrint(allocator, "{s}/{s}", .{ src_path, entry.path });
-                lib.addAssemblyFile(.{ .path = full_path });
+                lib.addAssemblyFile(b.path(full_path));
             }
         }
     }
@@ -277,14 +264,14 @@ pub fn build(b: *std.Build) !void {
             });
             exe.linkLibC();
             exe.linkLibrary(static_lib);
-            exe.addIncludePath(.{ .path = "src/libsodium/include" });
-            exe.addIncludePath(.{ .path = "test/quirks" });
+            exe.addIncludePath(b.path("src/libsodium/include"));
+            exe.addIncludePath(b.path("test/quirks"));
             const full_path = try fmt.allocPrint(allocator, "{s}/{s}", .{ test_path, entry.path });
             exe.addCSourceFiles(.{ .files = &.{full_path} });
             if (enable_benchmarks) {
-                exe.defineCMacro("BENCHMARKS", "1");
+                exe.root_module.addCMacro("BENCHMARKS", "1");
                 var buf: [16]u8 = undefined;
-                exe.defineCMacro("ITERATIONS", std.fmt.bufPrintIntToSlice(&buf, benchmarks_iterations, 10, .lower, .{}));
+                exe.root_module.addCMacro("ITERATIONS", std.fmt.bufPrintIntToSlice(&buf, benchmarks_iterations, 10, .lower, .{}));
             }
 
             b.installArtifact(exe);

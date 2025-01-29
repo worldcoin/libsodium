@@ -91,7 +91,7 @@ AS_IF([test "x$EMSCRIPTEN" != "x"], [
     enable_asm="no"
     AC_MSG_WARN([compiling to JavaScript - asm implementations disabled])
   ], [
-    AC_MSG_WARN([EMSCRIPTEN environment variable defined, but emcc doesn't appear to be used - Assuming compilation to native code])
+    AC_MSG_WARN([EMSCRIPTEN environment variable defined, but emcc doesn\'t appear to be used - Assuming compilation to native code])
     CFLAGS="$CFLAGS -U__EMSCRIPTEN__"
     unset EMSCRIPTEN
   ])
@@ -295,7 +295,7 @@ AS_CASE([$host_os],
 AS_IF([test "x$enable_ssp" != "xno"],[
 
 AS_CASE([$host_os],
-  [cygwin*|mingw*|msys|pw32*|cegcc*|haiku|none|eabi*], [ ],
+  [solaris*|cygwin*|mingw*|msys|pw32*|cegcc*|haiku|none|eabi*], [ ],
   [*], [
     AX_CHECK_COMPILE_FLAG([-fstack-protector], [
       AX_CHECK_LINK_FLAG([-fstack-protector],
@@ -352,6 +352,7 @@ AX_CHECK_COMPILE_FLAG([$CWFLAGS -Wsometimes-uninitialized], [CWFLAGS="$CWFLAGS -
 AX_CHECK_COMPILE_FLAG([$CWFLAGS -Wstrict-prototypes], [CWFLAGS="$CWFLAGS -Wstrict-prototypes"])
 AX_CHECK_COMPILE_FLAG([$CWFLAGS -Wswitch-enum], [CWFLAGS="$CWFLAGS -Wswitch-enum"])
 AX_CHECK_COMPILE_FLAG([$CWFLAGS -Wvariable-decl], [CWFLAGS="$CWFLAGS -Wvariable-decl"])
+AX_CHECK_COMPILE_FLAG([$CWFLAGS -Wvla], [CWFLAGS="$WCFLAGS -Wvla"])
 AX_CHECK_COMPILE_FLAG([$CWFLAGS -Wwrite-strings], [CWFLAGS="$CWFLAGS -Wwrite-strings"])
 
 AS_IF([test "x$EMSCRIPTEN" = "x"], [
@@ -964,7 +965,7 @@ AC_SUBST([LIBTOOL_EXTRA_FLAGS])
 TEST_LDFLAGS=''
 AS_IF([test "x$EMSCRIPTEN" != "x"],[
   EXEEXT=.js
-  TEST_LDFLAGS='--memory-init-file 0 --pre-js pre.js.inc -s RESERVED_FUNCTION_POINTERS=8'
+  TEST_LDFLAGS='--pre-js pre.js.inc -s RESERVED_FUNCTION_POINTERS=8'
 ])
 AC_SUBST(TEST_LDFLAGS)
 AM_CONDITIONAL([EMSCRIPTEN], [test "x$EMSCRIPTEN" != "x"])
